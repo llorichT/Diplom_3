@@ -19,9 +19,14 @@ class FeedPage(BasePage):
     def open_first_order_details(self):
         old_url = self.current_url()
         order = self.find_visible(FeedLocators.FIRST_ORDER_CARD)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", order)
-        self.driver.execute_script("arguments[0].click();", order)
+        self.scroll_to_element(order)
+        order.click()
         self.wait_url_changes(old_url)
+        return self
+
+    @allure.step("Проверить, что открыто модальное окно заказа")
+    def is_order_details_opened(self) -> bool:
+        return self.is_current_url_contains("/feed/")
 
     @allure.step("Получить счётчик «Выполнено за всё время»")
     def get_total_done(self) -> int:

@@ -12,7 +12,7 @@ class TestOrderFeed:
         page = FeedPage(driver).open_feed()
         page.open_first_order_details()
 
-        assert "/feed/" in driver.current_url
+        assert page.is_order_details_opened()
 
     @allure.title("После создания заказа его номер появляется в ленте заказов")
     def test_created_order_number_appears_in_feed(self, logged_in_driver, created_order_number):
@@ -22,24 +22,20 @@ class TestOrderFeed:
         assert feed.is_order_number_visible(created_order_number)
 
     @allure.title("После создания заказа счётчик «Выполнено за всё время» увеличивается")
-    def test_total_done_counter_increases_after_new_order(self, logged_in_driver, api_client, test_user):
+    def test_total_done_counter_increases_after_new_order(self, logged_in_driver, create_order):
         feed = FeedPage(logged_in_driver).open_feed()
         old_total = feed.get_total_done()
-        ingredients = api_client.get_ingredients()
-        ingredient_ids = [item["_id"] for item in ingredients[:2]]
-        api_client.create_order(ingredient_ids, test_user["access_token"])
+        create_order()
         feed.open_feed()
         feed.wait_total_done_more_than(old_total)
 
         assert feed.get_total_done() > old_total
 
     @allure.title("После создания заказа счётчик «Выполнено за сегодня» увеличивается")
-    def test_total_today_counter_increases_after_new_order(self, logged_in_driver, api_client, test_user):
+    def test_total_today_counter_increases_after_new_order(self, logged_in_driver, create_order):
         feed = FeedPage(logged_in_driver).open_feed()
         old_total_today = feed.get_total_today()
-        ingredients = api_client.get_ingredients()
-        ingredient_ids = [item["_id"] for item in ingredients[:2]]
-        api_client.create_order(ingredient_ids, test_user["access_token"])
+        create_order()
         feed.open_feed()
         feed.wait_total_today_more_than(old_total_today)
 

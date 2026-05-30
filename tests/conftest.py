@@ -70,11 +70,17 @@ def logged_in_driver(driver, test_user):
     LoginPage(driver).login(test_user["email"], test_user["password"])
     return driver
 
+@pytest.fixture
+def create_order(api_client, test_user):
+    def _create_order():
+        ingredient_ids = api_client.get_ingredient_ids_for_order()
+        return api_client.create_order(
+            ingredient_ids,
+            test_user["access_token"]
+        )
+    return _create_order
 
 @pytest.fixture
-def created_order_number(api_client, test_user):
-    ingredients = api_client.get_ingredients()
-    bun_id = next(item["_id"] for item in ingredients if item["type"] == "bun")
-    main_id = next(item["_id"] for item in ingredients if item["type"] != "bun")
-    order_response = api_client.create_order([bun_id, main_id], test_user["access_token"])
+def created_order_number(create_order):
+    order_response = create_order()
     return str(order_response["order"]["number"])

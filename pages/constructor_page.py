@@ -1,6 +1,5 @@
 import allure
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support import expected_conditions as EC
 
 from locators.common_locators import CommonLocators
 from locators.constructor_locators import ConstructorLocators
@@ -23,7 +22,7 @@ class ConstructorPage(BasePage):
     @allure.step("Закрыть модальное окно")
     def close_modal(self):
         self.click(CommonLocators.MODAL_CLOSE_BUTTON)
-        self.wait_until(EC.invisibility_of_element_located(CommonLocators.MODAL))
+        self.wait_invisible(CommonLocators.MODAL)
         return self
 
     @allure.step("Проверить, что открыт конструктор")
@@ -50,57 +49,30 @@ class ConstructorPage(BasePage):
         except NoSuchElementException:
             return 0
 
-    def _drag_and_drop(self, source, target):
-        self.driver.execute_script(
-            """
-            function fireDragEvent(type, element, dataTransfer) {
-                const event = new DragEvent(type, {
-                    bubbles: true,
-                    cancelable: true,
-                    dataTransfer: dataTransfer
-                });
-                element.dispatchEvent(event);
-            }
-
-            const source = arguments[0];
-            const target = arguments[1];
-            const dataTransfer = new DataTransfer();
-            fireDragEvent('pointerdown', source, dataTransfer);
-            fireDragEvent('mousedown', source, dataTransfer);
-            fireDragEvent('dragstart', source, dataTransfer);
-            fireDragEvent('dragenter', target, dataTransfer);
-            fireDragEvent('dragover', target, dataTransfer);
-            fireDragEvent('drop', target, dataTransfer);
-            fireDragEvent('dragend', source, dataTransfer);
-            """,
-            source,
-            target,
-        )
-
     @allure.step("Перетащить первый ингредиент в конструктор")
     def drag_first_ingredient_to_constructor(self):
         source = self.find_visible(ConstructorLocators.FIRST_INGREDIENT_CARD)
         target = self.find_visible(ConstructorLocators.CONSTRUCTOR_DROP_AREA)
-        self._drag_and_drop(source, target)
+        self.drag_and_drop(source, target)
         return self
 
     @allure.step("Добавить ингредиенты для заказа")
     def add_ingredients_for_order(self):
         drop_area = self.find_visible(ConstructorLocators.CONSTRUCTOR_DROP_AREA)
         bun = self.find_visible(ConstructorLocators.FIRST_BUN_CARD)
-        self._drag_and_drop(bun, drop_area)
+        self.drag_and_drop(bun, drop_area)
         ingredient = self.find_visible(ConstructorLocators.FIRST_NON_BUN_CARD)
-        self._drag_and_drop(ingredient, drop_area)
+        self.drag_and_drop(ingredient, drop_area)
         return self
 
     @allure.step("Оформить заказ и получить его номер")
     def make_order_and_get_number(self) -> str:
         self.add_ingredients_for_order()
-        
         order_button = self.find_clickable(ConstructorLocators.ORDER_BUTTON, timeout=30)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", order_button)
-        self.driver.execute_script("arguments[0].click();", order_button)
+        self.scroll_to_element(order_button)
+        order_button.click() 
         self.find_visible(ConstructorLocators.ORDER_MODAL, timeout=60)
+
         def order_number_is_ready(_):
             number = self.find_visible(ConstructorLocators.ORDER_NUMBER_IN_MODAL, timeout=10).text.strip()
             return number if number and number != "9999" else False
